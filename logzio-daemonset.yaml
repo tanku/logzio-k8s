@@ -17,43 +17,58 @@ spec:
         version: v1
     spec:
       tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
       containers:
-      - name: fluentd
-        image: logzio/logzio-k8s:1.1.0
-        env:
-        - name: LOGZIO_LOG_SHIPPING_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: logzio-logs-secret
-              key: logzio-log-shipping-token
-        - name: LOGZIO_LOG_LISTENER
-          valueFrom:
-            secretKeyRef:
-              name: logzio-logs-secret
-              key: logzio-log-listener
-        - name: FLUENTD_SYSTEMD_CONF
-          value: "disable"
-        - name: FLUENTD_PROMETHEUS_CONF
-          value: "disable"
-        resources:
-          limits:
-            memory: 200Mi
-          requests:
-            cpu: 100m
-            memory: 200Mi
-        volumeMounts:
-        - name: varlog
-          mountPath: /var/log
-        - name: varlibdockercontainers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
+        - name: fluentd
+          image: tanku/logzio-k8s:1.1.0
+          env:
+            - name: LOGZIO_LOG_SHIPPING_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: logzio-logs-secret
+                  key: logzio-log-shipping-token
+            - name: LOGZIO_LOG_LISTENER
+              valueFrom:
+                secretKeyRef:
+                  name: logzio-logs-secret
+                  key: logzio-log-listener
+            - name: K8S_NAMESPACE_FILTER
+              valueFrom:
+                configMapKeyRef:
+                  name: logzio-logs-config
+                  key: K8S_NAMESPACE_FILTER
+            - name: K8S_CONTAINER_EXCLUSION_FILTER
+              valueFrom:
+                configMapKeyRef:
+                  name: logzio-logs-config
+                  key: K8S_CONTAINER_EXCLUSION_FILTER
+            - name: K8S_FIRST_LINE_SELECTOR
+              valueFrom:
+                configMapKeyRef:
+                  name: logzio-logs-config
+                  key: K8S_FIRST_LINE_SELECTOR
+            - name: FLUENTD_SYSTEMD_CONF
+              value: "disable"
+            - name: FLUENTD_PROMETHEUS_CONF
+              value: "disable"
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibdockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers

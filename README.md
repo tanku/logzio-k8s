@@ -1,5 +1,9 @@
 # logzio-k8s
 
+A fork of [logzio/logzio-k8s](https://github.com/logzio/logzio-k8s).
+
+This version allows to filter logs by namespace and container name, in addition to configurable multi-line detection.
+
 For Kubernetes, a DaemonSet ensures that some or all nodes run a copy of a pod.
 This implementation is uses a Fluentd DaemonSet to collect Kubernetes logs.
 Fluentd is flexible enough and has the proper plugins to distribute logs to different third parties such as Logz.io.
@@ -8,8 +12,8 @@ The logzio-k8s image comes pre-configured for Fluentd to gather all logs from th
 
 You have two options for deployment:
 
-* [Default configuration <span class="sm ital">(recommended)</span>](#default-config)
-* [Custom configuration](#custom-config)
+- [Default configuration <span class="sm ital">(recommended)</span>](#default-config)
+- [Custom configuration](#custom-config)
 
 <div id="default-config">
 
@@ -20,7 +24,7 @@ However, you can deploy a custom configuration if your environment needs it.
 
 ### To deploy logzio-k8s
 
-#### 1.  Store your Logz.io credentials
+#### 1. Store your Logz.io credentials and config
 
 Save your Logz.io shipping credentials as a Kubernetes secret.
 
@@ -36,21 +40,35 @@ kubectl create secret generic logzio-logs-secret \
 -n kube-system
 ```
 
-#### 2.  Deploy the DaemonSet
+Apply the config map that is used for configuring the namespace and pod filtering and for namespace/container filtering and for line concatenation.
+
+From the Git repo on GitHub (default values)
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/tanku/logzio-k8s/master/logzio-configmap.yaml
+```
+
+or make a local copy of the file (by downloading or cloning the repo) and editing it:
+
+```shell
+kubectl apply -f logzio-configmap.yaml
+```
+
+#### 2. Deploy the DaemonSet
 
 For an RBAC cluster:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/logzio/logzio-k8s/master/logzio-daemonset-rbac.yaml
+kubectl apply -f https://raw.githubusercontent.com/tanku/logzio-k8s/master/logzio-daemonset-rbac.yaml
 ```
 
 Or for a non-RBAC cluster:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/logzio/logzio-k8s/master/logzio-daemonset.yaml
+kubectl apply -f https://raw.githubusercontent.com/tanku/logzio-k8s/master/logzio-daemonset.yaml
 ```
 
-#### 3.  Check Logz.io for your logs
+#### 3. Check Logz.io for your logs
 
 Give your logs some time to get from your system to ours,
 and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
@@ -60,7 +78,6 @@ see [log shipping troubleshooting](https://docs.logz.io/user-guide/log-shipping/
 
 </div>
 <!-- tab:end -->
-
 
 <!-- tab:start -->
 <div id="custom-config">
@@ -72,7 +89,7 @@ This is done using a ConfigMap that overwrites the default DaemonSet.
 
 ### To deploy logzio-k8s
 
-#### 1.  Store your Logz.io credentials
+#### 1. Store your Logz.io credentials
 
 Save your Logz.io shipping credentials as a Kubernetes secret.
 
@@ -88,7 +105,7 @@ kubectl create secret generic logzio-logs-secret \
 -n kube-system
 ```
 
-#### 2.  Configure Fluentd
+#### 2. Configure Fluentd
 
 Download either
 the [RBAC DaemonSet](https://raw.githubusercontent.com/logzio/logzio-k8s/master/logzio-daemonset-rbac.yaml)
@@ -99,20 +116,20 @@ Customize the integration environment variables configurations with the paramete
 
 **Parameters**
 
-| Parameter | Description |
-|---|---|
-| output_include_time | **Default**: `true` <br>  To append a timestamp to your logs when they're processed, `true`. Otherwise, `false`. |
-| LOGZIO_BUFFER_TYPE | **Default**: `file` <br>  Specifies which plugin to use as the backend. |
-| LOGZIO_BUFFER_PATH | **Default**: `/var/log/Fluentd-buffers/stackdriver.buffer` <br>  Path of the buffer. |
-| LOGZIO_OVERFLOW_ACTION | **Default**: `block` <br>  Controls the behavior when the queue becomes full. |
-| LOGZIO_CHUNK_LIMIT_SIZE | **Default**: `2M` <br>  Maximum size of a chunk allowed |
-| LOGZIO_QUEUE_LIMIT_LENGTH | **Default**: `6` <br>  Maximum length of the output queue. |
-| LOGZIO_FLUSH_INTERVAL | **Default**: `5s` <br>  Interval, in seconds, to wait before invoking the next buffer flush. |
-| LOGZIO_RETRY_MAX_INTERVAL | **Default**: `30s` <br>  Maximum interval, in seconds, to wait between retries. |
-| LOGZIO_FLUSH_THREAD_COUNT | **Default**: `2` <br>  Number of threads to flush the buffer. |
-| LOGZIO_LOG_LEVEL | **Default**: `info` <br> The log level for this container. |
+| Parameter                 | Description                                                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| output_include_time       | **Default**: `true` <br> To append a timestamp to your logs when they're processed, `true`. Otherwise, `false`. |
+| LOGZIO_BUFFER_TYPE        | **Default**: `file` <br> Specifies which plugin to use as the backend.                                          |
+| LOGZIO_BUFFER_PATH        | **Default**: `/var/log/Fluentd-buffers/stackdriver.buffer` <br> Path of the buffer.                             |
+| LOGZIO_OVERFLOW_ACTION    | **Default**: `block` <br> Controls the behavior when the queue becomes full.                                    |
+| LOGZIO_CHUNK_LIMIT_SIZE   | **Default**: `2M` <br> Maximum size of a chunk allowed                                                          |
+| LOGZIO_QUEUE_LIMIT_LENGTH | **Default**: `6` <br> Maximum length of the output queue.                                                       |
+| LOGZIO_FLUSH_INTERVAL     | **Default**: `5s` <br> Interval, in seconds, to wait before invoking the next buffer flush.                     |
+| LOGZIO_RETRY_MAX_INTERVAL | **Default**: `30s` <br> Maximum interval, in seconds, to wait between retries.                                  |
+| LOGZIO_FLUSH_THREAD_COUNT | **Default**: `2` <br> Number of threads to flush the buffer.                                                    |
+| LOGZIO_LOG_LEVEL          | **Default**: `info` <br> The log level for this container.                                                      |
 
-#### 3.  Deploy the DaemonSet
+#### 3. Deploy the DaemonSet
 
 For the RBAC DaemonSet:
 
@@ -126,7 +143,7 @@ For the non-RBAC DaemonSet:
 kubectl apply -f /path/to/logzio-daemonset.yaml
 ```
 
-#### 4.  Check Logz.io for your logs
+#### 4. Check Logz.io for your logs
 
 Give your logs some time to get from your system to ours,
 and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
@@ -147,6 +164,7 @@ By default, latest images launch `prometheus` plugins to monitor fluentd.
 You can disable prometheus input plugin by setting `disable` to `FLUENTD_PROMETHEUS_CONF` environment variable in your kubernetes configuration.
 
 ### Changelog
+
 - v1.1.0
   - Update deprecated conifg
 - v1.0.9
